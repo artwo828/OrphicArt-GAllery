@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Orpphic Art Gallery</title>
+  <style>
+    :root{--accent:#d4af37;--muted:#cfc5a6}
+    *{box-sizing:border-box;font-family:Inter,system-ui,Segoe UI,Arial;margin:0}
+    body{padding:20px;background:#070606;color:#f8f3e6}
+    .container{max-width:1100px;margin:0 auto}
+    header{display:flex;gap:20px;align-items:center;justify-content:space-between;margin-bottom:18px}
+    h1{font-size:24px;color:var(--accent);letter-spacing:1px}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}
+    .card{background:#0f0f0f;border-radius:10px;padding:12px;box-shadow:0 6px 18px rgba(0,0,0,0.6);border:1px solid rgba(212,175,55,0.08)}
+    .card img{width:100%;height:180px;object-fit:cover;border-radius:8px;border:1px solid rgba(255,255,255,0.03)}
+    .meta{display:flex;justify-content:space-between;align-items:center;margin-top:8px}
+    .price{font-weight:700;color:var(--accent)}
+    button{background:var(--accent);color:#070606;border:0;padding:8px 10px;border-radius:8px;cursor:pointer}
+    .cart{position:fixed;right:20px;bottom:20px;width:360px;max-height:80vh;overflow:auto;background:#0b0b0b;border-radius:10px;padding:12px;border:1px solid rgba(212,175,55,0.06)}
+    .cart .card{padding:8px;background:transparent;box-shadow:none}
+    .cart-item{display:flex;gap:10px;align-items:center;border-bottom:1px solid rgba(255,255,255,0.03);padding:8px 0}
+    .small{width:60px;height:60px;object-fit:cover;border-radius:6px;border:1px solid rgba(255,255,255,0.03)}
+    .muted{color:var(--muted);font-size:13px}
+    .checkout{display:flex;flex-direction:column;gap:8px}
+    input,textarea,select{padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.06);background:#0b0b0b;color:#f8f3e6}
+    .badge{background:rgba(212,175,55,0.08);color:var(--accent);padding:6px 8px;border-radius:999px;font-weight:600}
+    footer{margin-top:18px;text-align:center;color:var(--muted);font-size:13px}
+    .title-small{color:var(--muted);font-size:14px;margin-bottom:8px}
+    @media(min-width:880px){header h1{font-size:28px}}
+    a.paypal-link{display:inline-block;background:var(--accent);color:#070606;padding:8px 12px;border-radius:8px;text-decoration:none;font-weight:700}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div>
+        <h1>Orpphic Art Gallery</h1>
+        <div class="muted">Black & Gold themed gallery — add to cart and pay via PayPal. After payment, fill the short form.</div>
+      </div>
+      <div class="badge">Premium Art • $9.99</div>
+    </header>
+
+    <section>
+      <h2 class="title-small">Available artworks</h2>
+      <div class="grid" id="products"></div>
+    </section>
+
+    <footer>
+      Save as <code>index.html</code> and open in browser.
+    </footer>
+  </div>
+
+  <div class="cart card" id="cartBox">
+    <h3 style="margin:0 0 6px 0">Cart <span class="muted" id="cartCount">(0)</span></h3>
+    <div id="cartItems"></div>
+
+    <div class="checkout">
+      <h4 class="muted">Checkout</h4>
+
+      <div style="margin-bottom:6px;color:var(--muted);font-size:13px">
+        When you click <strong>Pay via PayPal</strong>, the payment window will open. About 3 seconds later, a new tab will open with the Google Form — there you will provide your <strong>full name, Gmail, and payment screenshot</strong>.
+      </div>
+
+      <div style="display:flex;gap:8px;align-items:center">
+        <button id="payWithPaypal">Pay via PayPal</button>
+      </div>
+
+      <div style="margin-top:8px;font-size:13px;color:var(--muted)">
+        Note: In the Google Form, the buyer will only be asked for their name, Gmail, and payment screenshot — no other details will be requested.
+      </div>
+    </div>
+  </div>
+
+<script>
+// Product list (your 9 hosted images) - price fixed at 9.99
+const PRODUCTS = [
+  {id:1,name:'Purple Hoodie Girl',price:9.99,img:'https://i.postimg.cc/VkPvcJ38/1648-2-2.png'},
+  {id:2,name:'Artwork 2',price:9.99,img:'https://i.postimg.cc/WzF2rVJj/2498-4.png'},
+  {id:3,name:'Artwork 3',price:9.99,img:'https://i.postimg.cc/T3XRyZ2M/3186.png'},
+  {id:4,name:'Artwork 4',price:9.99,img:'https://i.postimg.cc/zf7XY0rm/2514-3.png'},
+  {id:5,name:'Artwork 5',price:9.99,img:'https://i.postimg.cc/wjhj094j/2695-4.png'},
+  {id:6,name:'Artwork 6',price:9.99,img:'https://i.postimg.cc/FHtKyYZ6/2479-3.png'},
+  {id:7,name:'Artwork 7',price:9.99,img:'https://i.postimg.cc/gjQ2BjPn/2478-12.png'},
+  {id:8,name:'Artwork 8',price:9.99,img:'https://i.postimg.cc/5jWMCCVq/1562-4.jpg'},
+  {id:9,name:'Artwork 9',price:9.99,img:'https://i.postimg.cc/zG5ymLgg/2721-16.jpg'}
+];
+
+let cart = [];
+
+function $(id){return document.getElementById(id)}
+
+function renderProducts(){
+  const area = $('products');
+  area.innerHTML = '';
+  PRODUCTS.forEach(p=>{
+    const el = document.createElement('div'); el.className='card';
+    el.innerHTML = `
+      <img src="${p.img}" alt="${p.name}" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'600\\' height=\\'400\\'><rect width=\\'100%\\' height=\\'100%\\' fill=\\'%230b0b0b\\'/><text x=\\'50%\\' y=\\'50%\\' dominant-baseline=\\'middle\\' text-anchor=\\'middle\\' fill=\\'%23cfc5a6\\' font-size=\\'18\\'>Image not found</text></svg>'"/>
+      <div style="margin-top:8px">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div><strong style="color:#fff">${p.name}</strong><div class="muted">ID: ${p.id}</div></div>
+          <div class="price">$${p.price.toFixed(2)}</div>
+        </div>
+        <div style="display:flex;gap:6px;margin-top:8px">
+          <button onclick="addToCart(${p.id})">Add to cart</button>
+        </div>
+      </div>`;
+    area.appendChild(el);
+  })
+}
+
+function addToCart(id){
+  const prod = PRODUCTS.find(p=>p.id===id);
+  const existing = cart.find(c=>c.id===id);
+  if(existing){ existing.qty++; }
+  else cart.push({id:prod.id,name:prod.name,price:prod.price,qty:1,img:prod.img});
+  renderCart();
+}
+
+function renderCart(){
+  $('cartCount').textContent = `(${cart.reduce((s,i)=>s+i.qty,0)})`;
+  const area = $('cartItems'); area.innerHTML='';
+  if(cart.length===0){ area.innerHTML='<div class="muted">Cart is empty</div>'; return; }
+  cart.forEach(item=>{
+    const div = document.createElement('div'); div.className='cart-item';
+    div.innerHTML = `
+      <img src="${item.img}" class="small"/>
+      <div style="flex:1">
+        <div><strong style="color:#fff">${item.name}</strong></div>
+        <div class="muted">$${item.price} × <span style="margin-left:6px">${item.qty}</span></div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-weight:700;color:var(--accent)">$${(item.price*item.qty).toFixed(2)}</div>
+        <div style="margin-top:6px"><button style="background:#ef4444" onclick="removeFromCart(${item.id})">Remove</button></div>
+      </div>`;
+    area.appendChild(div);
+  });
+  const total = cart.reduce((s,i)=>s+i.price*i.qty,0);
+  const foot = document.createElement('div'); foot.style.marginTop='10px'; foot.innerHTML = `<div style="display:flex;justify-content:space-between"><div class="muted">Total</div><div style="font-weight:800;color:var(--accent)">$${total.toFixed(2)}</div></div>`;
+  area.appendChild(foot);
+}
+
+function removeFromCart(id){ cart = cart.filter(c=>c.id!==id); renderCart(); }
+
+// PayPal + Google Form flow
+const paypalEmail = 'paypalforgfx27@gmail.com';
+const googleFormLink = 'https://docs.google.com/forms/d/e/1FAIpQLScPy5AQuRvqQEkroXoBVKhcPOO8QOy53VJp6TJhtzbQBFGHIw/viewform?usp=sharing&ouid=104453576692769920889';
+
+$('payWithPaypal').addEventListener('click', ()=>{
+  if(cart.length===0){ alert('Please add at least one item to cart first.'); return; }
+  const total = cart.reduce((s,i)=>s+i.price*i.qty,0).toFixed(2);
+  const business = encodeURIComponent(paypalEmail);
+  const url = `https://www.paypal.com/cgi-bin/webscr?cmd=_xclick&business=${business}&amount=${encodeURIComponent(total)}&currency_code=USD&item_name=Orpphic+Art+Order`;
+  window.open(url,'_blank');
+  setTimeout(()=>{ window.open(googleFormLink,'_blank'); }, 3000);
+});
+
+renderProducts(); renderCart();
+</script>
+</body>
+</html>
